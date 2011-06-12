@@ -1,0 +1,5 @@
+.tmp
+.project
+.DS_Store
+.buildpath
+.settings
