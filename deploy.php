@@ -210,4 +210,15 @@ if ($config['file']) {
 fclose($lockfp);
 unlink($lockfile);
 
+
+if (function_exist('clearstatcache')) {
+	say('clearing stat cache');
+	clearstatcache();
+}
+
+if (function_exist('apc_clear_cache')) {
+	say('clearing APC cache');
+	apc_clear_cache('opcode');
+}
+
 say("done\n");
