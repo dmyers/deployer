@@ -38,7 +38,7 @@ $repos = array(
 
 error_reporting(-1);
 set_error_handler(function ($no, $str, $file, $line) {
-	$types = array (
+	$types = array(
 		E_ERROR=>'ERROR',
 		E_WARNING=>'WARNING',
 		E_PARSE=>'PARSING ERROR',
@@ -127,7 +127,6 @@ if (!flock($lockfp, LOCK_EX | LOCK_NB)) {
 }
 
 $payload = isset($_POST['payload']) ? json_decode($_POST['payload']) : false;
-#$payload = json_decode(json_encode(array('repository'=>array('name'=>'leests'), 'ref'=>'/master')));
 if (!$payload) {
 	say('invalid payload');
 	exit;
