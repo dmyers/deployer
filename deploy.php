@@ -104,7 +104,7 @@ $lockfile = '/tmp/githubsync';
 $lockfp = fopen($lockfile, 'w');
 
 if (!flock($lockfp, LOCK_EX | LOCK_NB)) {
-	say("githubsync script is locked by another process, retrying");
+	say('githubsync script is locked by another process, retrying');
 	
 	# retry
 	$tries = 0;
@@ -136,7 +136,7 @@ $project = $payload->repository->name;
 
 # make sure repository exists
 if (!isset($repos[$project])) {
-	say("project not found!");
+	say('project not found!');
 	exit;
 }
 
@@ -189,7 +189,7 @@ run("$git submodule init");
 run("$git submodule update");
 run("find /tmp -name '*.php'  -exec rm {} \;");
 
-if ($config['file']) {
+if (isset($config['file'])) {
 	$file = $config['path'] . $config['file'];
 	
 	# file must have the full path in it
@@ -208,7 +208,6 @@ if ($config['file']) {
 
 fclose($lockfp);
 unlink($lockfile);
-
 
 if (function_exist('clearstatcache')) {
 	say('clearing stat cache');
