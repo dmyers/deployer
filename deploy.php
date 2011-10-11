@@ -199,12 +199,12 @@ if (isset($config['file'])) {
 fclose($lockfp);
 unlink($lockfile);
 
-if (function_exist('clearstatcache')) {
+if (function_exists('clearstatcache')) {
 	say('clearing stat cache');
 	clearstatcache();
 }
 
-if (function_exist('apc_clear_cache')) {
+if (function_exists('apc_clear_cache')) {
 	say('clearing APC cache');
 	apc_clear_cache('opcode');
 }
