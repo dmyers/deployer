@@ -77,7 +77,7 @@ set_error_handler(function ($no, $str, $file, $line) {
 });
 
 # make sure config exists
-if (!file_exists('config.php')) {
+if (!file_exists(__DIR__ . '/config.php')) {
 	say('config not found!');
 	exit;
 }
