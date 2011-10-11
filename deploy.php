@@ -40,7 +40,7 @@ if (!file_exists('config.php')) {
 	exit;
 }
 
-require_once 'config.php';
+require_once __DIR__ . '/config.php';
 
 # make sure repos are defined
 if (empty($repos)) {
