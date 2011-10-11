@@ -14,39 +14,6 @@
  */
 
 error_reporting(-1);
-set_error_handler(function ($no, $str, $file, $line) {
-	$types = array(
-		E_ERROR=>'ERROR',
-		E_WARNING=>'WARNING',
-		E_PARSE=>'PARSING ERROR',
-		E_NOTICE=>'NOTICE',
-		E_CORE_ERROR=>'CORE ERROR',
-		E_CORE_WARNING=>'CORE WARNING',
-		E_COMPILE_ERROR=>'COMPILE ERROR',
-		E_COMPILE_WARNING=>'COMPILE WARNING',
-		E_USER_ERROR=>'USER ERROR',
-		E_USER_WARNING=>'USER WARNING',
-		E_USER_NOTICE=>'USER NOTICE',
-		E_STRICT=>'STRICT NOTICE',
-		E_RECOVERABLE_ERROR=>'RECOVERABLE ERROR'
-	);
-	
-	say($types[$no] . ': ' . $str . ' ' . basename($file) . '#' . $line);
-});
-
-# make sure config exists
-if (!file_exists('config.php')) {
-	say('config not found!');
-	exit;
-}
-
-require_once __DIR__ . '/config.php';
-
-# make sure repos are defined
-if (empty($repos)) {
-	say('repos not defined!');
-	exit;
-}
 
 define('REQUEST_ID', substr(md5(microtime(true)), 0, 6));
 
@@ -87,6 +54,40 @@ function run ()
 	fclose($fp);
 	
 	return implode("\n", $t);
+}
+
+set_error_handler(function ($no, $str, $file, $line) {
+	$types = array(
+		E_ERROR=>'ERROR',
+		E_WARNING=>'WARNING',
+		E_PARSE=>'PARSING ERROR',
+		E_NOTICE=>'NOTICE',
+		E_CORE_ERROR=>'CORE ERROR',
+		E_CORE_WARNING=>'CORE WARNING',
+		E_COMPILE_ERROR=>'COMPILE ERROR',
+		E_COMPILE_WARNING=>'COMPILE WARNING',
+		E_USER_ERROR=>'USER ERROR',
+		E_USER_WARNING=>'USER WARNING',
+		E_USER_NOTICE=>'USER NOTICE',
+		E_STRICT=>'STRICT NOTICE',
+		E_RECOVERABLE_ERROR=>'RECOVERABLE ERROR'
+	);
+	
+	say($types[$no] . ': ' . $str . ' ' . basename($file) . '#' . $line);
+});
+
+# make sure config exists
+if (!file_exists('config.php')) {
+	say('config not found!');
+	exit;
+}
+
+require_once __DIR__ . '/config.php';
+
+# make sure repos are defined
+if (empty($repos)) {
+	say('repos not defined!');
+	exit;
 }
 
 # locking mechanism, make sure we dont run multiple and conflict something or worse
