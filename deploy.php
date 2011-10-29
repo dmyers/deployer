@@ -5,8 +5,6 @@
  * Automatically syncs your servers with a git
  * repo automatically on push using hooks.
  * 
- * Logging file:
- *   /tmp/githubsync-log
  * You can tail this file while deploying or view
  * for debugging.
  * 
@@ -17,16 +15,44 @@ error_reporting(-1);
 
 define('REQUEST_ID', substr(md5(microtime(true)), 0, 6));
 
-function say ($str)
+define('LOG_PRINT_INSTEAD', isset($printlog) ? $printlog : false);
+
+define('LOGFILE', isset($logfile) ? $logfile : '/tmp/deployer.log');
+define('LOCKFILE', isset($lockfile) ? $lockfile : '/tmp/deployer.lock');
+
+function say ($raw, $skipPre = false)
 {
-	static $log;
+	static $fp, $printed;
 	
-	if ($log === null) {
-		$log = fopen('/tmp/githubsync-log', 'a');
+	$pre = '[' . REQUEST_ID . ': ' . date('r') . '] ';
+	$str = array();
+
+	foreach (explode("\n", $raw) as $i=>$line) {
+		$str[] = ($i === 0 && !$skipPre ? $pre : str_repeat(' ', strlen($pre))) . rtrim($line);
+	}
+
+	$str = implode("\n", $str);
+
+	if (LOG_PRINT_INSTEAD) {
+		if (!$printed) {
+			echo '<pre>';
+			$printed = true;
+		}
+
+		echo $str . "\n";
+		ob_flush();
+		flush();
+		return true;
+	}
+
+	# logging mode
+
+	if ($fp === null) {
+		$fp = fopen(LOGFILE, 'a');
 	}
 	
-	fwrite($log, '[' . REQUEST_ID . ': ' . date('r') . '] ' . $str . "\n");
-	fflush($log);
+	fwrite($fp, $str);
+	fflush($fp);
 };
 
 function run ()
@@ -36,7 +62,7 @@ function run ()
 	
 	$fp = popen($command, 'r');
 	
-	say("running $command");
+	say("$ $command");
 	
 	$t = array();
 	
@@ -48,12 +74,27 @@ function run ()
 	while (!feof($fp)) {
 		$line = rtrim(fgets($fp, 4096));
 		$t[] = $line;
-		say("  " . $line);
+		say("  " . $line, true);
 	}
 	
 	fclose($fp);
 	
 	return implode("\n", $t);
+}
+
+function element ($array, $k, $def = null)
+{
+	return array_key_exists($k, $array ? : array()) ? $array[$k] : $def;
+}
+
+function get ($k, $d = null)
+{
+	return element($_GET, $k, $d);
+}
+
+function post ($k, $d = null)
+{
+	return element($_POST, $k, $d);
 }
 
 set_error_handler(function ($no, $str, $file, $line) {
@@ -76,26 +117,23 @@ set_error_handler(function ($no, $str, $file, $line) {
 	say($types[$no] . ': ' . $str . ' ' . basename($file) . '#' . $line);
 });
 
-# make sure config exists
-if (!file_exists(__DIR__ . '/config.php')) {
-	say('config not found!');
-	exit;
-}
-
-require_once __DIR__ . '/config.php';
-
-# make sure repos are defined
-if (empty($repos)) {
-	say('repos not defined!');
-	exit;
+# make sure config has been loaded
+if (!isset($repos)) {
+	say('$repos not loaded!');
+	exit(1);
 }
 
 # locking mechanism, make sure we dont run multiple and conflict something or worse
-$lockfile = '/tmp/githubsync';
-$lockfp = fopen($lockfile, 'w');
+$lockfp = fopen(LOCKFILE, 'w');
+
+say('adquiring lock (' . LOCKFILE . ') ...');
+if (!$lockfp) {
+	say('failed to fopen lockfile');
+	exit(1);
+}
 
 if (!flock($lockfp, LOCK_EX | LOCK_NB)) {
-	say('githubsync script is locked by another process, retrying');
+	say('deployer is locked by another process, retrying');
 	
 	# retry
 	$tries = 0;
@@ -104,7 +142,7 @@ if (!flock($lockfp, LOCK_EX | LOCK_NB)) {
 		
 		if ($tries > 4) {
 			say("lockfile still locked after $tries tries, exiting");
-			exit;
+			exit(1);
 		}
 		
 		sleep(1);
@@ -117,42 +155,104 @@ if (!flock($lockfp, LOCK_EX | LOCK_NB)) {
 	}
 }
 
-$payload = isset($_POST['payload']) ? json_decode($_POST['payload']) : false;
+say('lock adquired');
+
+say('=== env ===');
+say('method: ' . $_SERVER['REQUEST_METHOD']);
+say('raw get: ' . print_r($_GET, true));
+say('raw post: ' . print_r($_POST, true));
+say('=== env ===');
+
+
+
+$payload = post('payload');
+$source = get('source');
+
+$force = get('force');
+if ($force) {
+	@list ($project, $branch) = explode('/', $force);
+	$source = 'github';
+	$payload = json_encode(array('ref'=>$force, 'repository'=>array('name'=>$project), 'commits'=>array()));
+}
+
+$payload = $payload ? json_decode($payload) : false;
+
+# make sure its a valid source
+if (!in_array($source, array('bitbucket', 'github'))) {
+	say('invalid source');
+	exit(1);
+}
+
+$bitbucket = $source == 'bitbucket';
+$github = $source == 'github';
+
 if (!$payload) {
 	say('invalid payload');
-	exit;
+	exit(1);
 }
 
 $project = $payload->repository->name;
 
+$config = element($repos, $project);
+
 # make sure repository exists
-if (!isset($repos[$project])) {
+if (!$config) {
 	say('project not found!');
-	exit;
+	exit(1);
 }
 
-$config = $repos[$project];
-say("repository: $project");
 
-$branch = substr($payload->ref, strrpos($payload->ref, '/') + 1);
+# get the branch name
+if ($github) {
+	$branch = substr($payload->ref, strrpos($payload->ref, '/') + 1);
+} else if ($bitbucket) {
+	foreach ($payload->commits as $commit) {
+		if ($commit->branch) {
+			$branch = $commit->branch;
+			break;
+		}
+	}
+}
+
+
+say("source: $source");
+say("repository: $project");
+say("branch: $branch");
+
+$config = element($config, $branch);
 
 # make sure branch is valid
-if (!isset($config[$branch])) {
+if (!$config) {
 	say("$project/$branch: branch $branch is not configured with script");
-	exit;
+	exit(1);
 }
 
-$config = $config[$branch];
+say("project branch config: " . print_r($config, true));
+
+$path = element($config, 'path');
+$replaceRev = element($config, 'replace_rev', true);
+$randomRev = element($config, 'random_rev', false);
+$timeRev = element($config, 'time_rev', false);
+
+if (!$path) {
+	say("project path not defined");
+	exit(1);
+}
 
 # make sure path exists
-if (!is_dir($config['path'])) {
-	say("$project/$branch: repository path does not exist, have you checked it out? " . $config['path']);
-	exit;
+if (!is_dir($path)) {
+	say("project dir not a dir");
+	exit(1);
 }
 
+# extract commiters and print a nice message
 $people = array();
 foreach ($payload->commits as $commit) {
-	$author = $commit->author->name;
+	if ($bitbucket) {
+		$author = $commit->author;
+	} else if ($github) {
+		$author = $commit->author->name;
+	}
 	
 	if (isset($people[$author])) {
 		$people[$author]++;
@@ -171,34 +271,42 @@ $people = implode(', ', $people);
 
 say("$project/$branch commits ($total): " . $people);
 
-$git = "cd {$config['path']} && git";
 
+$git = "cd {$path} && git";
+
+# clean repository of local changes
 run("$git reset --hard HEAD");
-run("$git clean -f");
-run("$git pull origin $branch");
+run("$git clean -xdf");
+
+# fetch remote changes
+run("$git pull --rebase origin $branch");
+
+# clean submodules
+run("$git submodule foreach git reset --hard HEAD");
+run("$git submodule foreach git reset -xdf");
+
+# initialize submodules not initialized and pull the code
 run("$git submodule init");
 run("$git submodule update");
-run("find /tmp -name '*.php'  -exec rm {} \;");
 
-if (isset($config['file'])) {
-	$file = $config['path'] . $config['file'];
-	
-	# file must have the full path in it
-	if (!file_exists($file)) {
-		$file = $config['file'];
+# replace revision
+if ($replaceRev) {
+	if ($randomRev) {
+		$replace = mt_rand(1, mt_getrandmax());
+	} else if ($timeRev) {
+		$replace = time();
+	} else {
+		$replace = trim(`$git rev-parse HEAD`);
 	}
-	
-	if (file_exists($file)) {
-		$data = file_get_contents($file);
-		$data = str_replace('$$GITREV$$', ($rev = mt_rand(1, time())), $data);
-		file_put_contents($file, $data);
-		
-		say("updating repo revision to $rev");
-	}
+
+	run("find {$path} | grep -e '\.php$' -e '\.css$' -e '\.js$' | xargs perl -pi -e 's/{{GITREVISION}}/" . $replace . "/'");
 }
 
-fclose($lockfp);
-unlink($lockfile);
+# clear some cached stuff
+
+# remove any temporary files
+say('clearing temporary files');
+run("find /tmp -name '*.php'  -exec rm {} \;");
 
 if (function_exists('clearstatcache')) {
 	say('clearing stat cache');
@@ -209,5 +317,8 @@ if (function_exists('apc_clear_cache')) {
 	say('clearing APC cache');
 	apc_clear_cache('opcode');
 }
+
+say('unlocking');
+fclose($lockfp);
 
 say("done\n");
