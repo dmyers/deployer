@@ -121,6 +121,8 @@ set_error_handler(function ($no, $str, $file, $line) {
 	say($types[$no] . ': ' . $str . ' ' . basename($file) . '#' . $line);
 });
 
+say("Deployer rev: {{GITREVISION}}");
+
 # make sure config has been loaded
 if (!isset($repos)) {
 	say('$repos not loaded!');
