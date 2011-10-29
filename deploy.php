@@ -305,7 +305,7 @@ if ($replaceRev) {
 		$replace = trim(`$git rev-parse HEAD`);
 	}
 
-	run("find {$path} | grep -e '\.php$' -e '\.css$' -e '\.js$' | xargs perl -pi -e 's/{{GITREVISION}}/" . $replace . "/'");
+	run("find {$path} | grep -e '\.php$' -e '\.css$' -e '\.js$' | xargs perl -pi -e 's/{{GITREV" . "ISION}}/" . $replace . "/'");
 }
 
 # clear some cached stuff

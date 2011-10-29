@@ -23,7 +23,7 @@
  *   break CDN caching if they allow query strings
  *
  *		path = project path
- *		replace_rev boolean, default true	If true, {{ GITREVISION }} will be replaced
+ *		replace_rev boolean, default true	If true, {{GITREVISION}} will be replaced
  *		
  *		random_rev boolean, default false	Generate a random number as revision
  *		time_rev boolean, default false	Generate a random
