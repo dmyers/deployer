@@ -31,7 +31,7 @@ function say ($raw, $skipPre = false)
 		$str[] = ($i === 0 && !$skipPre ? $pre : str_repeat(' ', strlen($pre))) . rtrim($line);
 	}
 
-	$str = implode("\n", $str);
+	$str = implode("\n", $str) . "\n";
 
 	if (LOG_PRINT_INSTEAD) {
 		if (!$printed) {
@@ -39,7 +39,7 @@ function say ($raw, $skipPre = false)
 			$printed = true;
 		}
 
-		echo $str . "\n";
+		echo $str;
 		ob_flush();
 		flush();
 		return true;
