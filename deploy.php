@@ -289,7 +289,7 @@ run("$git pull --rebase origin $branch");
 
 # clean submodules
 run("$git submodule foreach git reset --hard HEAD");
-run("$git submodule foreach git reset -xdf");
+run("$git submodule foreach git clean -xdf");
 
 # initialize submodules not initialized and pull the code
 run("$git submodule init");
