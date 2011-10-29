@@ -49,6 +49,10 @@ function say ($raw, $skipPre = false)
 
 	if ($fp === null) {
 		$fp = fopen(LOGFILE, 'a');
+		if (!$fp) {
+			echo "failed to open logfile";
+			exit(1);
+		}
 	}
 	
 	fwrite($fp, $str);
