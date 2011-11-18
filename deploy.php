@@ -152,7 +152,7 @@ if (!flock($lockfp, LOCK_EX | LOCK_NB)) {
 		
 		sleep(1);
 		
-		say("githubsync script still locked by another process, try #$tries, retrying");
+		say("deployer still locked by another process, try #$tries, retrying");
 		
 		if (flock($lockfp, LOCK_EX | LOCK_NB)) {
 			break;
