@@ -46,7 +46,6 @@ function say ($raw, $skipPre = false)
 	}
 
 	# logging mode
-
 	if ($fp === null) {
 		$fp = fopen(LOGFILE, 'a');
 		if (!$fp) {
@@ -161,15 +160,13 @@ if (!flock($lockfp, LOCK_EX | LOCK_NB)) {
 	}
 }
 
-say('lock adquired');
+say('lock aquired');
 
 say('=== env ===');
 say('method: ' . $_SERVER['REQUEST_METHOD']);
 say('raw get: ' . print_r($_GET, true));
 say('raw post: ' . print_r($_POST, true));
 say('=== env ===');
-
-
 
 $payload = post('payload');
 $source = get('source');
@@ -276,7 +273,6 @@ foreach ($people as $name=>$commits) {
 $people = implode(', ', $people);
 
 say("$project/$branch commits ($total): " . $people);
-
 
 $git = "cd {$path} && git";
 
