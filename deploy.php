@@ -131,7 +131,7 @@ if (!isset($repos)) {
 # locking mechanism, make sure we dont run multiple and conflict something or worse
 $lockfp = fopen(LOCKFILE, 'w');
 
-say('adquiring lock (' . LOCKFILE . ') ...');
+say('aquiring lock (' . LOCKFILE . ') ...');
 if (!$lockfp) {
 	say('failed to fopen lockfile');
 	exit(1);
@@ -301,7 +301,7 @@ if ($replaceRev) {
 		$replace = trim(`$git rev-parse HEAD`);
 	}
 
-	run("find {$path} | grep -e '\.php$' -e '\.css$' -e '\.js$' | xargs perl -pi -e 's/{{GITREV" . "ISION}}/" . $replace . "/'");
+	run("find {$path} | grep -e '\.php$' -e '\.css$' -e '\.js$' | xargs perl -pi -e 's/{{GITREVISION}}/" . $replace . "/'");
 }
 
 # clear some cached stuff
