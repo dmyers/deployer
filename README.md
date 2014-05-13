@@ -13,5 +13,3 @@ Next, copy the config.tpl.php as config.php and change the repos how you want.
 Deployer works with CDNs too that support recaching query strings.
 Just point the deployer config for the repo's file to your config script and deployer will automatically replace **{{GITREVISION}}** with the revision allowing you to
 append that revision to your static files like ?revision which will tell your CDN to recache on each deployment.
-
-Get more information at [http://code.envoa.com/deployer](http://code.envoa.com/deployer)
